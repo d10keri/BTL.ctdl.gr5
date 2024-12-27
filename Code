@@ -1,0 +1,428 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Cấu trúc Photo dùng trong danh sách liên kết
+struct ImageInfo {
+    int ImageID;
+    char ImageDate[11];
+    char ImageTime[9];
+    char AlbumName[50];
+    char Tags[100];
+};
+typedef struct ImageInfo Photo;
+
+// Danh sách liên kết
+typedef struct Node {
+    Photo data;
+    struct Node* next;
+} Node;
+
+Node* head = NULL;
+Node* trash = NULL;
+
+/***************************** CASE 1 + CASE 2 ***************************************/
+// Hàm hiển thị tất cả ảnh có trong album
+void displayImages(Node* head) {
+    if (head == NULL) {
+        printf("Album trống!\n");
+        return;
+    }
+
+    //printf("\n--- ẢNH ĐƯỢC THÊM VÀO ALBUM ---\n");
+    // In tiêu đề cột
+    printf("+------+------------+----------+---------------------+----------------------------------+\n");
+    printf("|  ID  |    Ngày    |   Giờ    |       Album         |              Tags                |\n");
+    printf("+------+------------+----------+---------------------+----------------------------------+\n");
+
+    // In dữ liệu từng ảnh
+    Node* temp = head;
+    while (temp != NULL) {
+        printf("| %4d | %10s | %8s | %-19s | %-32s |\n",
+               temp->data.ImageID, 
+               temp->data.ImageDate, 
+               temp->data.ImageTime, 
+               temp->data.AlbumName, 
+               temp->data.Tags);
+        temp = temp->next;
+            printf("+------+------------+----------+---------------------+----------------------------------+\n");
+    }
+}
+
+// Thêm ảnh vào album
+void addphoto(Node** head, int id, const char* date, const char* time, const char* albumName, const char* tags) {
+    // Tạo một nút mới
+    Node* new_node = (Node*)malloc(sizeof(Node));
+    if (new_node == NULL) {
+        printf("Không đủ bộ nhớ để tạo nút mới!\n");
+        return;
+    }
+
+    // Sao chép dữ liệu vào nút mới
+    new_node->data.ImageID = id;
+    snprintf(new_node->data.ImageDate, sizeof(new_node->data.ImageDate), "%s", date);
+    snprintf(new_node->data.ImageTime, sizeof(new_node->data.ImageTime), "%s", time);
+    snprintf(new_node->data.AlbumName, sizeof(new_node->data.AlbumName), "%s", albumName);
+    snprintf(new_node->data.Tags, sizeof(new_node->data.Tags), "%s", tags);
+    new_node->next = NULL;
+
+    // Nếu danh sách rỗng, nút mới là nút đầu tiên
+    if (*head == NULL) {
+        *head = new_node;
+    } else {
+        // Duyệt đến nút cuối cùng của danh sách
+        Node* temp = *head;
+        while (temp->next != NULL) {
+            temp = temp->next;
+        }
+        // Gắn nút mới vào cuối danh sách
+        temp->next = new_node;
+    }
+
+    printf("Đã thêm ảnh với ID %d vào ALBUM.\n", id);
+}
+
+/***************************** CASE 3 ***************************************/
+// Tìm kiếm ảnh theo ID
+void findImage(int id, Node* head) {
+    Node* current = head;
+    while (current != NULL) {
+        if (current->data.ImageID == id) {
+             printf("Tìm thấy ảnh: ID: %d, Ngày: %s, Thời gian: %s, Album: %s, Tags: %s\n",
+                   current->data.ImageID, current->data.ImageDate, current->data.ImageTime, current->data.AlbumName, current->data.Tags);
+            return;
+        }
+        current = current->next;
+    }
+    printf("Không tìm thấy ảnh có ID %d.\n", id);
+}
+
+/***************************** CASE 4 ***************************************/
+//Tìm kiếm ảnh theo từ khóa
+void searchPhoto(const char* keyword) {
+    Node* current = head;
+    int found = 0;
+    while (current != NULL) {
+        if (strstr(current->data.AlbumName, keyword) ||
+            strstr(current->data.Tags, keyword)) {
+            printf("Tìm thấy ảnh: %d\nAlbum: %s\nThời gian: %s\nTags: %s\n\n",
+                   current->data.ImageID, current->data.AlbumName,
+                   current->data.ImageTime, current->data.Tags);
+            found = 1;
+        }
+        current = current->next;
+    }
+
+    if (!found) {
+        printf("Không tìm thấy ảnh với từ khóa '%s'.\n", keyword);
+    }
+}
+
+/***************************** CASE 5 ***************************************/
+// Hàm sửa thông tin ảnh theo ID
+void editImage(int id) {
+    Node* current = head;
+    while (current != NULL) {
+        if (current->data.ImageID == id) {
+            printf("Sửa ảnh có ID %d:\n", id);
+            printf("Nhập ngày (DD/MM/YYYY): ");
+            scanf("%10s", current->data.ImageDate);
+            printf("Nhập thời gian (HH:MM:SS): ");
+            scanf("%8s", current->data.ImageTime);
+            printf("Nhập tên: ");
+            scanf("%49s", current->data.AlbumName);
+            printf("Nhập mô tả: ");
+            scanf("%99s", current->data.Tags);
+            printf("Sửa ảnh thành công!\n");
+            return;
+        }
+        current = current->next;
+    }
+    printf("Không tìm thây ảnh có id %d.\n", id);
+}
+
+/***************************** CASE 6 ***************************************/
+//Hàm hiển thị ảnh trùng lặp trong album 
+void detectDuplicateImages(Node* head) {
+    if (head == NULL) {
+        printf("Danh sách ảnh trống, không có ảnh để kiểm tra!\n");
+        return;
+    }
+
+    int foundDuplicate = 0; // Biến đánh dấu có ảnh trùng lặp hay không
+    Node* current = head;
+
+    printf("\n--- ẢNH TRÙNG LẶP TRONG ALBUM ---\n");
+    printf("+------+------------+----------+---------------------+----------------------------------+\n");
+    printf("|  ID  |    Ngày    |   Giờ    |       Album         |              Tags                |\n");
+    printf("+------+------------+----------+---------------------+----------------------------------+\n");
+
+    // Duyệt qua từng ảnh trong danh sách
+    while (current != NULL) {
+        Node* runner = current->next;
+        while (runner != NULL) {
+            // Kiểm tra các tiêu chí trùng lặp
+            if (strcmp(current->data.ImageDate, runner->data.ImageDate) == 0 &&
+                strcmp(current->data.ImageTime, runner->data.ImageTime) == 0 &&
+                strcmp(current->data.AlbumName, runner->data.AlbumName) == 0) {
+                
+                // In thông tin ảnh trùng
+                printf("| %4d | %10s | %8s | %-19s | %-32s |\n",
+                       runner->data.ImageID,
+                       runner->data.ImageDate,
+                       runner->data.ImageTime,
+                       runner->data.AlbumName,
+                       runner->data.Tags);
+                printf("+------+------------+----------+---------------------+----------------------------------+\n");
+                foundDuplicate = 1; // Đánh dấu phát hiện ảnh trùng
+            }
+            runner = runner->next;
+        }
+        current = current->next;
+    }
+
+    if (!foundDuplicate) {
+        printf("Không tìm thấy ảnh trùng lặp trong danh sách!\n");
+    }
+}
+
+/***************************** CASE 7 ***************************************/
+// Hàm xóa ảnh trùng lặp và chuyển vào danh sách trash
+void removeDuplicateImages(Node** head, Node** trash) {
+    if (*head == NULL) {
+        printf("Danh sách ảnh trống, không có ảnh để xóa!\n");
+        return;
+    }
+
+    Node* current = *head;
+    while (current != NULL) {
+        Node* runner = current;
+        while (runner->next != NULL) {
+            if (strcmp(runner->next->data.ImageDate, current->data.ImageDate) == 0 &&
+                strcmp(runner->next->data.ImageTime, current->data.ImageTime) == 0 &&
+                strcmp(runner->next->data.AlbumName, current->data.AlbumName) == 0) {
+                Node* duplicate = runner->next;
+                runner->next = runner->next->next;
+
+                duplicate->next = *trash; // Chuyển vào danh sách trash
+
+                *trash = duplicate;
+
+                printf("Thực hiện xóa ảnh trùng với ngày %s, thời gian %s, Album %s.\n",
+                       current->data.ImageDate, current->data.ImageTime, current->data.AlbumName);
+            } else {
+                runner = runner->next;
+            }
+        }
+        current = current->next;
+    }
+    printf("Hoàn tất xóa ảnh trùng lặp!\n");
+}
+
+/***************************** CASE 8 ***************************************/
+// Hàm xóa ảnh trong album 
+void deleteImage(Node** head, int imageID) {
+    Node* temp = *head;
+    Node* prev = NULL;
+
+    // Nếu node đầu tiên cần xóa
+    if (temp != NULL && temp->data.ImageID == imageID) {
+        *head = temp->next;
+        free(temp);
+        printf("Xóa thành công ảnh có ID: %d!\n", imageID);
+        return;
+    }
+
+    // Tìm node cần xóa
+    while (temp != NULL && temp->data.ImageID != imageID) {
+        prev = temp;
+        temp = temp->next;
+    }
+
+    // Nếu không tìm thấy ảnh
+    if (temp == NULL) {
+        printf("Không tìm thấy ảnh có ID %d!\n", imageID);
+        return;
+    }
+
+    // Xóa node
+    if (prev == NULL) {
+        *head = temp->next;
+    } else {
+        prev->next = temp->next;
+    }
+    temp->next = trash;
+    trash = temp;
+    printf("Ảnh có ID %d chuyển vào mục đã xóa.\n", imageID);
+
+}
+
+/***************************** CASE 9 ***************************************/
+// Hàm hiển thị mục đã xóa
+void displaytrash(Node* trash) {
+    if (trash == NULL) {
+        printf("Mục đã xóa trống!\n");
+    }
+    printf("\n--- Hiển thị các ảnh đã xóa ---\n");
+    Node* temp = trash;
+    while (temp != NULL) {
+        printf("Mã ảnh: %d\t", temp->data.ImageID);
+        printf("Ngày: %s\t", temp->data.ImageDate);
+        printf("Giờ: %s\t", temp->data.ImageTime);
+        printf("Album: %s\t", temp->data.AlbumName);
+        printf("Tags: %s\n", temp->data.Tags);
+        temp = temp->next;
+    }
+    printf("------------------\n");
+}
+
+/***************************** CASE 10 ***************************************/
+//Hàm khôi phục ảnh đã xóa 
+void restoreImageFromTrash(int id) {
+    Node* temp = trash;
+    Node* prev = NULL;
+    while (temp != NULL && temp->data.ImageID != id) {
+        prev = temp;
+        temp = temp->next;
+    }
+
+    if (temp == NULL) {
+        printf("Không tìm thấy ảnh có ID %d\n", id);
+        return;
+    }
+
+    if (prev == NULL) {
+        trash = temp->next;
+    } else {
+        prev->next = temp->next;
+    }
+
+    temp->next = head;
+    head = temp;
+    printf("Khôi phục thành công ảnh có ID %d.\n", id);
+}
+
+// Giải phóng bộ nhớ danh sách liên kết
+void freeMemory(Node* list) {
+    while (list != NULL) {
+        Node* temp = list;
+        list = list->next;
+        free(temp);
+    }
+}
+
+int main() {
+    int luaChon, id, n;
+    do {
+        printf("\n--------- MENU: QUẢN LÝ ALBUM ẢNH ---------\n");
+        printf("1. Thêm ảnh mới vào album\t");
+        printf("2. Hiển thị ảnh có trong album\n");
+        printf("3. Tìm kiếm ảnh theo ID\t\t");
+        printf("4. Tìm kiếm ảnh theo từ khóa\n");
+        printf("5. Sửa thông tin ảnh\t\t");
+        printf("6. Hiển thị ảnh trùng lặp\n");
+        printf("7. Xóa ảnh trùng lặp\t\t");
+        printf("8. Xóa ảnh trong album\n");
+        printf("9. Các mục đã xóa\t\t");
+        printf("10. Khôi phục ảnh đã xóa\n");
+        printf("0. Thoát\n");
+        printf("Nhập tác vụ muốn chọn: ");
+        scanf("%d", &luaChon);
+        switch (luaChon) {
+            case 1:
+                printf("\t----- ẢNH ĐƯỢC THÊM VÀO ALBUM -----\t\n");
+                addphoto(&head, 1, "01/12/2024", "06:00:01", "Paris", "Tower");
+                addphoto(&head, 2, "01/12/2024", "08:00:24", "Spain", "BarcelonaFC");
+                addphoto(&head, 3, "02/12/2024", "08:15:33", "Spring", "Flowers");
+                addphoto(&head, 4, "02/12/2024", "08:15:33", "Spring", "Flowers");
+                addphoto(&head, 5, "01/12/2024", "06:00:01", "Field", "Trees,Flowers");
+                addphoto(&head, 6, "02/12/2024", "08:15:33", "Canada", "Autumn");
+                addphoto(&head, 7, "26/07/2023", "01:01:04", "Japan", "Tokyo, Osaka,Tower");
+                addphoto(&head, 8, "01/01/2024", "10:00:00", "Holiday", "Beach,Sun");
+                addphoto(&head, 9, "02/01/2024", "11:00:00", "Holiday", "44Mountain");
+                addphoto(&head, 10, "03/01/2024", "09:00:00", "Vacation", "City,Adventure");
+                displayImages(head);
+                break;
+            case 2:
+                printf("\nHiển thị ảnh có trong album\n");
+                displayImages(head);
+                break;
+            case 3:
+                printf("\t----- Tìm kiếm ảnh theo ID -----\t\n");
+                printf("\nNhập số lượng ảnh cần tìm: ");
+                scanf("%d", &n);
+                for(int i = 0; i < n; i++){
+                    printf("Tìm kiếm ảnh theo ID: ");
+                    scanf("%d", &id);
+                    findImage(id,head);
+                }
+                break;
+            case 4:
+                printf("\t----- Tìm kiếm ảnh theo từ khóa -----\t\n");
+                char keyword[100]; // Biến để lưu từ khóa
+
+                // Nhập từ khóa cần tìm
+                printf("\nNhập từ khóa cần tìm: ");
+                scanf(" %[^\n]", keyword); // Đọc chuỗi có khoảng trắng
+
+                // Gọi hàm tìm kiếm ảnh theo từ khóa
+                searchPhoto(keyword);
+                break;
+            case 5:
+                printf("\t----- Sửa thông tin ảnh -----\t\n");
+                printf("\nNhập id ảnh cần sửa: ");
+                scanf("%d", &id);
+                editImage(id);
+                displayImages(head);
+                break;
+            case 6:
+                printf("\t----- Các ảnh bị trùng lặp -----\t\n");
+                detectDuplicateImages(head);
+                break;
+            case 7:
+                printf("\t----- Xóa ảnh trùng lặp -----\t\n");
+                removeDuplicateImages(&head, &trash);
+                printf("ALBUM sau khi xóa ảnh trùng: \n");
+                displayImages(head);
+                break;
+            case 8: 
+                printf("\t ----- Xóa ảnh trong album ----- \t\n");
+                printf("\nNhập số ảnh cần xóa: ");
+                scanf("%d", &n);
+                printf("Xóa ảnh với ID: ");
+                for(int i = 0; i < n; i++){
+                    scanf("%d", &id);
+                    deleteImage(&head, id);
+                }
+                printf("Ảnh trong ALBUM sau khi xóa: \n");
+                displayImages(head);
+                break;
+            case 9:
+                printf("\t----- Hiển thị ảnh có trong thùng rác -----\t\n");
+
+                displaytrash(trash);
+                break;
+            case 10:
+                int n;
+                printf("\t----- Khôi phục ảnh đã xóa -----\t\n");
+                printf("\nNhập số ảnh muốn khôi phục: ");
+                scanf("%d", &n);
+                printf("Khôi phục ảnh có ID: ");
+
+                for(int i = 0; i < n; i++){    
+                    scanf("%d", &id);
+                    restoreImageFromTrash(id);
+                }
+                displayImages(head);
+                break;
+            case 0:
+                printf("Thoát chương trình.\n");
+                break;
+            default:
+                printf("Tác vụ không hợp lệ, vui lòng chọn lại.\n");
+        }
+    } while (luaChon != 0);
+    freeMemory(head);
+    freeMemory(trash);
+    return 0;
+}
